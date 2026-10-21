@@ -1,0 +1,8 @@
+{
+  "name": "MindAlign - Mental Health Self-Assessment",
+  "short_name": "MindAlign",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d9488",
+  "theme_color": "#0d9488"
+}

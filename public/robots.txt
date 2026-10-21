@@ -1,0 +1,5 @@
+# Allow search engine indexing
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
