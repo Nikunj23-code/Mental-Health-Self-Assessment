@@ -19,7 +19,7 @@ export default async function TherapistAvailabilityPage() {
   const { data: therapistProfileData } = await supabase
     .from("therapist_profiles")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("id", user.id)
     .single();
 
   const therapistProfile = therapistProfileData as any;

@@ -35,12 +35,12 @@ export default async function AdminVerificationsPage() {
       id,
       license_number,
       is_verified,
-      specializations,
-      years_of_experience,
+      specialties,
+      experience_years,
       hourly_rate,
       bio,
       created_at,
-      user:profiles(full_name, email)
+      profiles(full_name, email)
     `)
     .order("created_at", { ascending: false });
 
@@ -63,7 +63,7 @@ export default async function AdminVerificationsPage() {
             Therapist Verification Queue
           </h1>
           <p className="text-sm text-slate-600 mt-2 max-w-2xl leading-relaxed">
-            Verify state medical licenses, registration numbers, and clinical specializations to activate therapists for client matching and appointments.
+            Verify state medical licenses, registration numbers, and clinical specialties to activate therapists for client matching and appointments.
           </p>
         </div>
 

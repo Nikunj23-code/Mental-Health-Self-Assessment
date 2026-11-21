@@ -9,8 +9,8 @@ interface Therapist {
   id: string;
   license_number: string;
   is_verified: boolean;
-  specializations: string[];
-  years_of_experience: number;
+  specialties: string[];
+  experience_years: number;
   hourly_rate: number;
   bio?: string;
   created_at: string;
@@ -118,8 +118,8 @@ export default function VerificationList({ initialTherapists }: Props) {
       {displayed.length > 0 ? (
         <div className="space-y-4">
           {displayed.map((t) => {
-            const name = t.user?.full_name || "Practitioner";
-            const email = t.user?.email || "No email on record";
+            const name = (t as any).profiles?.full_name || "Practitioner";
+            const email = (t as any).profiles?.email || "No email on record";
 
             return (
               <div
@@ -146,14 +146,14 @@ export default function VerificationList({ initialTherapists }: Props) {
                     </span>
                     <span>{email}</span>
                     <span>•</span>
-                    <span>{t.years_of_experience}+ yrs exp.</span>
+                    <span>{t.experience_years}+ yrs exp.</span>
                     <span>•</span>
                     <span>₹{t.hourly_rate} / session</span>
                   </div>
 
-                  {t.specializations && t.specializations.length > 0 && (
+                  {t.specialties && t.specialties.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {t.specializations.map((spec) => (
+                      {t.specialties.map((spec) => (
                         <span
                           key={spec}
                           className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-[11px] font-medium"

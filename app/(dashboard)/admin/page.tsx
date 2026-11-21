@@ -76,7 +76,7 @@ export default async function AdminDashboardPage() {
   const { count: activeCrisisCount } = await supabase
     .from("crisis_logs")
     .select("*", { count: "exact", head: true })
-    .eq("status", "open");
+    .eq("status", "active");
 
   const { count: totalAppointments } = await supabase
     .from("appointments")
@@ -102,9 +102,9 @@ export default async function AdminDashboardPage() {
     .select(`
       id,
       license_number,
-      years_of_experience,
+      experience_years,
       created_at,
-      user:profiles(full_name)
+      profiles(full_name)
     `)
     .eq("is_verified", false)
     .limit(4);
@@ -234,7 +234,7 @@ export default async function AdminDashboardPage() {
             {pendingList && pendingList.length > 0 ? (
               <div className="divide-y divide-slate-100 text-xs">
                 {pendingList.map((t: any) => {
-                  const u = t.user as any;
+                  const u = t.profiles as any;
                   return (
                     <div key={t.id} className="py-3 flex items-center justify-between">
                       <div>
@@ -281,7 +281,7 @@ export default async function AdminDashboardPage() {
                         </div>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full font-semibold text-[10px] uppercase ${
-                        c.status === "open" ? "bg-rose-100 text-rose-800" : "bg-emerald-100 text-emerald-800"
+                        c.status === "active" ? "bg-rose-100 text-rose-800" : "bg-emerald-100 text-emerald-800"
                       }`}>
                         {c.status}
                       </span>

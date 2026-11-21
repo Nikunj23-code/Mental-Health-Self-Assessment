@@ -31,13 +31,13 @@ export default async function TherapistDashboardPage() {
       id,
       license_number,
       is_verified,
-      specializations,
-      years_of_experience,
+      specialties,
+      experience_years,
       hourly_rate,
       average_rating,
-      user:profiles(full_name)
+      profiles(full_name)
     `)
-    .eq("user_id", user.id)
+    .eq("id", user.id)
     .single();
 
   const therapistProfile = therapistProfileData as any;
@@ -46,7 +46,7 @@ export default async function TherapistDashboardPage() {
     redirect("/login");
   }
 
-  const therapistUser = therapistProfile.user as any;
+  const therapistUser = therapistProfile.profiles as any;
   const fullName = therapistUser?.full_name || "Doctor";
 
   // Fetch upcoming scheduled appointments
@@ -63,7 +63,7 @@ export default async function TherapistDashboardPage() {
       patient:profiles(full_name, id)
     `)
     .eq("therapist_id", therapistProfile.id)
-    .in("status", ["scheduled", "confirmed"])
+    .in("status", ["scheduled"])
     .order("appointment_date", { ascending: true })
     .order("start_time", { ascending: true })
     .limit(5);

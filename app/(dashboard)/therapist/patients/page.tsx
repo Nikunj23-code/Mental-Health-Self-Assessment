@@ -18,7 +18,7 @@ export default async function TherapistPatientsPage() {
   const { data: therapistProfileData } = await supabase
     .from("therapist_profiles")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("id", user.id)
     .single();
 
   const therapistProfile = therapistProfileData as any;
@@ -67,17 +67,17 @@ export default async function TherapistPatientsPage() {
       .from("assessments")
       .select("*")
       .in("patient_id", patientIds)
-      .order("completed_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     const assessmentList = (assessments || []) as any[];
     assessmentList.forEach((a: any) => {
       if (!assessmentMap[a.patient_id]) {
         assessmentMap[a.patient_id] = {};
       }
-      if (a.assessment_type === "PHQ-9" && !assessmentMap[a.patient_id].phq9) {
+      if (a.type === "PHQ-9" && !assessmentMap[a.patient_id].phq9) {
         assessmentMap[a.patient_id].phq9 = a;
       }
-      if (a.assessment_type === "GAD-7" && !assessmentMap[a.patient_id].gad7) {
+      if (a.type === "GAD-7" && !assessmentMap[a.patient_id].gad7) {
         assessmentMap[a.patient_id].gad7 = a;
       }
     });
@@ -115,7 +115,7 @@ export default async function TherapistPatientsPage() {
                 const clinicalData = assessmentMap[p.patientId];
                 const phq9 = clinicalData?.phq9;
                 const gad7 = clinicalData?.gad7;
-                const hasCrisis = phq9?.crisis_flag;
+                const hasCrisis = phq9?.has_crisis_flag;
 
                 return (
                   <div key={p.patientId} className="p-6 hover:bg-slate-50/60 transition-colors">
@@ -144,7 +144,7 @@ export default async function TherapistPatientsPage() {
                           {phq9 ? (
                             <div className="mt-0.5 flex items-center justify-between">
                               <span className="font-extrabold text-teal-800 text-sm">{phq9.total_score} / 27</span>
-                              <span className="text-[10px] font-semibold text-slate-600 capitalize">({phq9.severity_band})</span>
+                              <span className="text-[10px] font-semibold text-slate-600 capitalize">({phq9.severity})</span>
                             </div>
                           ) : (
                             <span className="text-slate-400 font-medium">Not taken</span>
@@ -156,7 +156,7 @@ export default async function TherapistPatientsPage() {
                           {gad7 ? (
                             <div className="mt-0.5 flex items-center justify-between">
                               <span className="font-extrabold text-blue-800 text-sm">{gad7.total_score} / 21</span>
-                              <span className="text-[10px] font-semibold text-slate-600 capitalize">({gad7.severity_band})</span>
+                              <span className="text-[10px] font-semibold text-slate-600 capitalize">({gad7.severity})</span>
                             </div>
                           ) : (
                             <span className="text-slate-400 font-medium">Not taken</span>

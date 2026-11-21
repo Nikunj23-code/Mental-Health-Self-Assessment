@@ -28,11 +28,11 @@ export default async function TherapistMatchingPage() {
     .from("assessments")
     .select("*")
     .eq("patient_id", user.id)
-    .order("completed_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
   const assessmentList = (assessments || []) as any[];
-  const latestPHQ9 = assessmentList.find((a) => a.assessment_type === "PHQ-9");
-  const latestGAD7 = assessmentList.find((a) => a.assessment_type === "GAD-7");
+  const latestPHQ9 = assessmentList.find((a) => a.type === "PHQ-9");
+  const latestGAD7 = assessmentList.find((a) => a.type === "GAD-7");
 
   // Fetch all verified therapists with profile data
   const { data: therapistData } = await supabase
@@ -69,10 +69,10 @@ export default async function TherapistMatchingPage() {
   const criteria: PatientCriteria = {
     patientId: user.id,
     phq9Score: latestPHQ9?.total_score,
-    phq9Severity: latestPHQ9?.severity_band,
+    phq9Severity: latestPHQ9?.severity,
     gad7Score: latestGAD7?.total_score,
-    gad7Severity: latestGAD7?.severity_band,
-    preferredLanguage: "English",
+    gad7Severity: latestGAD7?.severity,
+    preferredLanguage: (profile as any)?.preferred_language || "English",
   };
 
   // Build candidate list
@@ -85,18 +85,19 @@ export default async function TherapistMatchingPage() {
       fullName,
       title,
       specialties: t.specialties || ["General Counseling"],
-      experienceYears: t.experience_years || 5,
-      hourlyRate: Number(t.hourly_rate || 1500),
-      averageRating: Number(t.average_rating || 4.8),
-      totalReviews: Number(t.total_reviews || 12),
+      experienceYears: t.experience_years ?? 0,
+      hourlyRate: Number(t.hourly_rate ?? 0),
+      averageRating: t.total_reviews > 0 ? Number(t.average_rating ?? 0) : 0,
+      totalReviews: Number(t.total_reviews ?? 0),
       languages: t.languages || ["English", "Hindi"],
       unbookedSlotsCount: slotCountMap[t.id] || 0,
-      gender: "Not Specified",
+      gender: undefined,
     };
   });
 
   // Execute ranking algorithm
-  const matches = rankTherapists(candidates, criteria);
+  const hasAssessment = Boolean(latestPHQ9 || latestGAD7);
+  const matches = hasAssessment ? rankTherapists(candidates, criteria) : [];
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -134,8 +135,8 @@ export default async function TherapistMatchingPage() {
             <div>
               <h3 className="text-sm font-bold text-slate-900">Active Matching Profile</h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                {latestPHQ9 ? `PHQ-9: ${latestPHQ9.total_score} (${latestPHQ9.severity_band})` : "PHQ-9: Not taken"} •{" "}
-                {latestGAD7 ? `GAD-7: ${latestGAD7.total_score} (${latestGAD7.severity_band})` : "GAD-7: Not taken"}
+                {latestPHQ9 ? `PHQ-9: ${latestPHQ9.total_score} (${latestPHQ9.severity})` : "PHQ-9: Not taken"} •{" "}
+                {latestGAD7 ? `GAD-7: ${latestGAD7.total_score} (${latestGAD7.severity})` : "GAD-7: Not taken"}
               </p>
             </div>
           </div>
@@ -159,7 +160,13 @@ export default async function TherapistMatchingPage() {
         </div>
 
         {/* Ranked Match Cards */}
-        {matches.length > 0 ? (
+        {!hasAssessment ? (
+          <div className="rounded-3xl border border-teal-200 bg-white p-10 text-center shadow-sm">
+            <h2 className="text-xl font-bold text-slate-900">Your personal matches start with an assessment</h2>
+            <p className="mx-auto my-4 max-w-lg text-sm text-slate-600">Complete a screening to create a transparent matching profile. We never invent a personal match score before you have assessment data.</p>
+            <Link href="/patient/assessment" className="inline-flex rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white">Start an assessment</Link>
+          </div>
+        ) : matches.length > 0 ? (
           <div className="space-y-6">
             {matches.map((m) => (
               <TherapistMatchCard key={m.therapist.therapistId} match={m} />

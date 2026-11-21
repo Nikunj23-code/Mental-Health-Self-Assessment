@@ -26,17 +26,17 @@ interface Props {
 
 export default function CrisisManager({ initialLogs }: Props) {
   const router = useRouter();
-  const [filter, setFilter] = useState<"all" | "open" | "resolved">("open");
+  const [filter, setFilter] = useState<"all" | "active" | "resolved">("active");
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const openLogs = initialLogs.filter((l) => l.status === "open");
+  const openLogs = initialLogs.filter((l) => l.status === "active");
   const resolvedLogs = initialLogs.filter((l) => l.status === "resolved");
 
   const displayed =
-    filter === "open"
+    filter === "active"
       ? openLogs
       : filter === "resolved"
       ? resolvedLogs
@@ -78,14 +78,14 @@ export default function CrisisManager({ initialLogs }: Props) {
       <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
         <button
           type="button"
-          onClick={() => setFilter("open")}
+          onClick={() => setFilter("active")}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            filter === "open"
+            filter === "active"
               ? "bg-white text-rose-700 shadow-sm"
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          Active Open ({openLogs.length})
+          Active Active ({openLogs.length})
         </button>
         <button
           type="button"
@@ -116,7 +116,7 @@ export default function CrisisManager({ initialLogs }: Props) {
           {displayed.map((c) => {
             const patientName = c.patient?.full_name || "Patient";
             const patientEmail = c.patient?.email || "No email on record";
-            const isOpen = c.status === "open";
+            const isActive = c.status === "active";
 
             return (
               <div
@@ -125,7 +125,7 @@ export default function CrisisManager({ initialLogs }: Props) {
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className={`p-2.5 rounded-xl ${isOpen ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"}`}>
+                    <span className={`p-2.5 rounded-xl ${isActive ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"}`}>
                       <AlertTriangle className="w-5 h-5" />
                     </span>
                     <div>
@@ -136,7 +136,7 @@ export default function CrisisManager({ initialLogs }: Props) {
 
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-bold uppercase w-fit ${
-                      isOpen
+                      isActive
                         ? "bg-rose-100 text-rose-800 border border-rose-200"
                         : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                     }`}
@@ -181,7 +181,7 @@ export default function CrisisManager({ initialLogs }: Props) {
                 )}
 
                 {/* Resolution Form Toggle */}
-                {isOpen && (
+                {isActive && (
                   <div className="pt-2 border-t border-slate-100">
                     {resolvingId === c.id ? (
                       <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">

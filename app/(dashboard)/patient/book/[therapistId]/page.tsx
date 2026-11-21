@@ -38,6 +38,7 @@ export default async function BookTherapistPage({ params }: Props) {
       profiles(full_name, avatar_url)
     `)
     .eq("id", therapistId)
+    .eq("is_verified", true)
     .single();
 
   if (error || !therapist) {
@@ -90,13 +91,13 @@ export default async function BookTherapistPage({ params }: Props) {
             <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-slate-600">
               <div className="flex items-center gap-1 font-bold text-amber-600">
                 <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                <span>{Number(therapistObj.average_rating || 4.9).toFixed(2)}</span>
-                <span className="text-slate-400 font-normal">({therapistObj.total_reviews || 10} reviews)</span>
+                <span>{Number(therapistObj.total_reviews ? therapistObj.average_rating : 0).toFixed(2)}</span>
+                <span className="text-slate-400 font-normal">({therapistObj.total_reviews ?? 0} reviews)</span>
               </div>
               <span className="text-slate-300">•</span>
               <div className="flex items-center gap-1">
                 <Award className="w-3.5 h-3.5 text-teal-600" />
-                <span>{therapistObj.experience_years || 5}+ Years Experience</span>
+                <span>{therapistObj.experience_years ?? 0}+ Years Experience</span>
               </div>
               <span className="text-slate-300">•</span>
               <span className="font-semibold text-slate-800">₹{therapistObj.hourly_rate} / 50 min session</span>

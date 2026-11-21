@@ -57,15 +57,15 @@ export default async function SessionDetailPage({ params }: Props) {
     .from("assessments")
     .select("*")
     .eq("patient_id", apt.patient_id)
-    .order("completed_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(3);
 
   const patient = apt.patient as any;
   const patientName = patient?.full_name || "Patient";
 
   const assessmentsList = (assessments || []) as any[];
-  const latestPHQ9 = assessmentsList.find((a) => a.assessment_type === "PHQ-9");
-  const latestGAD7 = assessmentsList.find((a) => a.assessment_type === "GAD-7");
+  const latestPHQ9 = assessmentsList.find((a) => a.type === "PHQ-9");
+  const latestGAD7 = assessmentsList.find((a) => a.type === "GAD-7");
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -120,8 +120,8 @@ export default async function SessionDetailPage({ params }: Props) {
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">MBC Pre-Screen:</span>
             {latestPHQ9 ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-200">
-                PHQ-9: {latestPHQ9.total_score}/27 ({latestPHQ9.severity_band})
-                {latestPHQ9.crisis_flag && (
+                PHQ-9: {latestPHQ9.total_score}/27 ({latestPHQ9.severity})
+                {latestPHQ9.has_crisis_flag && (
                   <span className="text-rose-600 font-bold ml-1">⚠️ Item 9 Flagged</span>
                 )}
               </span>
@@ -131,7 +131,7 @@ export default async function SessionDetailPage({ params }: Props) {
 
             {latestGAD7 ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-800 text-xs font-semibold border border-blue-200">
-                GAD-7: {latestGAD7.total_score}/21 ({latestGAD7.severity_band})
+                GAD-7: {latestGAD7.total_score}/21 ({latestGAD7.severity})
               </span>
             ) : (
               <span className="text-xs text-slate-400">GAD-7: Not taken</span>

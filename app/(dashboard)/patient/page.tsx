@@ -40,7 +40,7 @@ export default async function PatientDashboardPage() {
     .from("assessments")
     .select("*")
     .eq("patient_id", user.id)
-    .order("completed_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(4);
 
   // Fetch upcoming appointments
@@ -53,22 +53,21 @@ export default async function PatientDashboardPage() {
       end_time,
       status,
       meeting_link,
-      notes,
       therapist:therapist_profiles(
         id,
-        specializations,
+        specialties,
         user:profiles(full_name)
       )
     `)
     .eq("patient_id", user.id)
-    .in("status", ["scheduled", "confirmed"])
+    .in("status", ["scheduled"])
     .order("appointment_date", { ascending: true })
     .limit(3);
 
   // Find latest PHQ-9 and GAD-7
   const assessmentList = (assessments || []) as any[];
-  const latestPHQ9 = assessmentList.find((a) => a.assessment_type === "PHQ-9");
-  const latestGAD7 = assessmentList.find((a) => a.assessment_type === "GAD-7");
+  const latestPHQ9 = assessmentList.find((a) => a.type === "PHQ-9");
+  const latestGAD7 = assessmentList.find((a) => a.type === "GAD-7");
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -143,15 +142,15 @@ export default async function PatientDashboardPage() {
                   <ScoreResultCard
                     assessmentType="PHQ-9"
                     totalScore={latestPHQ9.total_score}
-                    severityBand={latestPHQ9.severity_band}
-                    crisisFlag={latestPHQ9.crisis_flag}
-                    completedAt={latestPHQ9.completed_at}
+                    severityBand={latestPHQ9.severity}
+                    crisisFlag={latestPHQ9.has_crisis_flag}
+                    completedAt={latestPHQ9.created_at}
                   />
                 ) : (
                   <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-6 text-center">
                     <p className="text-sm text-slate-500 font-medium">No PHQ-9 Depression assessment completed yet.</p>
                     <Link
-                      href="/patient/assessment/phq9"
+                      href="/patient/assessment/phq-9"
                       className="inline-block mt-3 text-xs font-semibold text-teal-600 hover:underline"
                     >
                       Take PHQ-9 (9 Questions) →
@@ -163,15 +162,15 @@ export default async function PatientDashboardPage() {
                   <ScoreResultCard
                     assessmentType="GAD-7"
                     totalScore={latestGAD7.total_score}
-                    severityBand={latestGAD7.severity_band}
-                    crisisFlag={latestGAD7.crisis_flag}
-                    completedAt={latestGAD7.completed_at}
+                    severityBand={latestGAD7.severity}
+                    crisisFlag={latestGAD7.has_crisis_flag}
+                    completedAt={latestGAD7.created_at}
                   />
                 ) : (
                   <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-6 text-center">
                     <p className="text-sm text-slate-500 font-medium">No GAD-7 Anxiety assessment completed yet.</p>
                     <Link
-                      href="/patient/assessment/gad7"
+                      href="/patient/assessment/gad-7"
                       className="inline-block mt-3 text-xs font-semibold text-teal-600 hover:underline"
                     >
                       Take GAD-7 (7 Questions) →
@@ -203,14 +202,14 @@ export default async function PatientDashboardPage() {
                   {assessmentList.map((a: any) => (
                     <div key={a.id} className="py-2.5 flex items-center justify-between text-xs sm:text-sm">
                       <div className="flex items-center gap-2.5">
-                        <span className="font-semibold text-slate-800">{a.assessment_type}</span>
+                        <span className="font-semibold text-slate-800">{a.type}</span>
                         <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">
                           Score: {a.total_score}
                         </span>
-                        <span className="text-slate-500 text-xs capitalize">({a.severity_band})</span>
+                        <span className="text-slate-500 text-xs capitalize">({a.severity})</span>
                       </div>
                       <span className="text-slate-400 text-xs">
-                        {new Date(a.completed_at).toLocaleDateString()}
+                        {new Date(a.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   ))}
