@@ -1,259 +1,113 @@
-"use client";
+'use client';
+import {useState,useEffect,useMemo,useRef} from 'react';
+import {useParams,useRouter} from 'next/navigation';
+import Link from 'next/link';
+import {ArrowLeft,ShieldCheck,AlertCircle,Loader2} from 'lucide-react';
+import AdaptiveQuestionCard from '@/components/assessment/AdaptiveQuestionCard';
+import CrisisSafetyModal from '@/components/assessment/CrisisSafetyModal';
+import {loadAssessmentSchema,recordSafetySignal,submitAssessment} from '@/server/actions/assessment';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw, AlertTriangle, ShieldCheck } from "lucide-react";
-import AdaptiveQuestionCard from "@/components/assessment/AdaptiveQuestionCard";
-import CrisisSafetyModal from "@/components/assessment/CrisisSafetyModal";
-import ScoreResultCard from "@/components/assessment/ScoreResultCard";
-import { submitAssessment } from "@/server/actions/assessment";
-
-// Standard PHQ-9 questions fallback if network schema unavailable
-const DEFAULT_PHQ9_QUESTIONS = [
-  { id: "phq9_q1", text: "Little interest or pleasure in doing things" },
-  { id: "phq9_q2", text: "Feeling down, depressed, or hopeless" },
-  { id: "phq9_q3", text: "Trouble falling or staying asleep, or sleeping too much" },
-  { id: "phq9_q4", text: "Feeling tired or having little energy" },
-  { id: "phq9_q5", text: "Poor appetite or overeating" },
-  { id: "phq9_q6", text: "Feeling bad about yourself — or that you are a failure or have let yourself or your family down" },
-  { id: "phq9_q7", text: "Trouble concentrating on things, such as reading the newspaper or watching television" },
-  { id: "phq9_q8", text: "Moving or speaking so slowly that other people could have noticed. Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual" },
-  { id: "phq9_q9", text: "Thoughts that you would be better off dead, or of hurting yourself in some way" },
-];
-
-// Standard GAD-7 questions fallback if network schema unavailable
-const DEFAULT_GAD7_QUESTIONS = [
-  { id: "gad7_q1", text: "Feeling nervous, anxious, or on edge" },
-  { id: "gad7_q2", text: "Not being able to stop or control worrying" },
-  { id: "gad7_q3", text: "Worrying too much about different things" },
-  { id: "gad7_q4", text: "Trouble relaxing" },
-  { id: "gad7_q5", text: "Being so restless that it's hard to sit still" },
-  { id: "gad7_q6", text: "Becoming easily annoyed or irritable" },
-  { id: "gad7_q7", text: "Feeling afraid, as if something awful might happen" },
-];
-
-const STANDARD_OPTIONS = [
-  { value: 0, label: "Not at all" },
-  { value: 1, label: "Several days" },
-  { value: 2, label: "More than half the days" },
-  { value: 3, label: "Nearly every day" },
-];
-
-export default function AssessmentRunnerPage() {
-  const params = useParams();
-  const router = useRouter();
-  const rawType = (params?.type as string) || "phq-9";
-  const assessmentType = rawType.toLowerCase().includes("gad") ? "GAD-7" : "PHQ-9";
-
-  const questions = assessmentType === "PHQ-9" ? DEFAULT_PHQ9_QUESTIONS : DEFAULT_GAD7_QUESTIONS;
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [showCrisisModal, setShowCrisisModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [result, setResult] = useState<{
-    totalScore: number;
-    severityBand: string;
-    crisisFlag: boolean;
-  } | null>(null);
-
-  const currentQ = questions[currentIndex];
-  const currentValue = answers[currentQ.id];
-  const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
-
-  const handleSelectOption = (val: number) => {
-    setAnswers((prev) => ({ ...prev, [currentQ.id]: val }));
-
-    // Zero-latency Crisis Interception on PHQ-9 Item 9
-    if (currentQ.id === "phq9_q9" && val > 0) {
-      setShowCrisisModal(true);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    setErrorMsg("");
-
-    // Validate that all questions are answered
-    const unanswered = questions.filter((q) => answers[q.id] === undefined);
-    if (unanswered.length > 0) {
-      setErrorMsg(`Please answer all questions before submitting. (${unanswered.length} remaining)`);
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await submitAssessment({
-        assessmentType,
-        answers,
-      });
-
-      if (!response.success || !response.data) {
-        setErrorMsg(response.error || "Failed to submit assessment.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      setResult({
-        totalScore: response.data.totalScore,
-        severityBand: response.data.severityBand,
-        crisisFlag: response.data.crisisFlag,
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Submission failed.";
-      setErrorMsg(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-
-      {/* Zero-latency safety modal */}
-      <CrisisSafetyModal
-        isOpen={showCrisisModal}
-        onClose={() => setShowCrisisModal(false)}
-      />
-
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/patient/assessment"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Cancel Assessment
-          </Link>
-
-          <span className="text-xs font-semibold text-slate-500">
-            {assessmentType} Clinical Protocol
-          </span>
-        </div>
-
-        {result ? (
-          /* Assessment Completed Result View */
-          <div className="space-y-6">
-            <div className="bg-teal-50 border border-teal-200 rounded-3xl p-6 text-center">
-              <span className="p-3 bg-teal-600 text-white rounded-full inline-flex mb-3 shadow-md">
-                <CheckCircle2 className="w-6 h-6" />
-              </span>
-              <h2 className="text-xl font-extrabold text-slate-900">
-                Assessment Completed Successfully
-              </h2>
-              <p className="text-xs text-slate-600 mt-1 max-w-md mx-auto">
-                Your responses have been securely encrypted and evaluated. Below is your clinical severity classification.
-              </p>
-            </div>
-
-            <ScoreResultCard
-              assessmentType={assessmentType}
-              totalScore={result.totalScore}
-              severityBand={result.severityBand}
-              crisisFlag={result.crisisFlag}
-            />
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link
-                href="/patient/match"
-                className="flex-1 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-sm transition-all text-center shadow-md shadow-teal-600/20"
-              >
-                View Recommended Therapists →
-              </Link>
-              <Link
-                href="/patient/progress"
-                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-semibold rounded-xl text-sm transition-all text-center"
-              >
-                View Progress Trajectory
-              </Link>
-            </div>
-          </div>
-        ) : (
-          /* Active Question Step */
-          <div className="space-y-6">
-            {/* Header / Progress bar */}
-            <div>
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-2">
-                <span>Question {currentIndex + 1} of {questions.length}</span>
-                <span>{progressPercent}% Complete</span>
-              </div>
-              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-teal-600 h-full transition-all duration-300 rounded-full"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
-
-            {errorMsg && (
-              <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-sm font-medium">
-                {errorMsg}
-              </div>
-            )}
-
-            {/* Question Card Component */}
-            <AdaptiveQuestionCard
-              questionNumber={currentIndex + 1}
-              totalQuestions={questions.length}
-              questionText={currentQ.text}
-              instruction="Over the last 2 weeks, how often have you been bothered by any of the following problems?"
-              options={STANDARD_OPTIONS}
-              selectedValue={currentValue}
-              onSelect={handleSelectOption}
-            />
-
-            {/* Navigation buttons */}
-            <div className="flex items-center justify-between pt-2">
-              <button
-                type="button"
-                onClick={handlePrev}
-                disabled={currentIndex === 0}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              >
-                ← Previous
-              </button>
-
-              {currentIndex < questions.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={currentValue === undefined}
-                  className="px-6 py-2.5 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-teal-600/20"
-                >
-                  Next Question →
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || currentValue === undefined}
-                  className="px-6 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-slate-900/20"
-                >
-                  {isSubmitting ? "Calculating..." : "Submit Assessment"}
-                </button>
-              )}
-            </div>
-
-            <div className="text-center text-[11px] text-slate-400 pt-4 flex items-center justify-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-              Responses are confidential and stored in accordance with clinical data standards.
-            </div>
-          </div>
-        )}
-      </main>
+type Question={key:string;text:string;is_crisis_trigger?:boolean};
+type Scale={value:number;label:string};
+type Schema={id:string;type:string;version:number;title:string;description:string;schema_json:{questions:Question[];scale:Scale[];instructions?:string}};
+export default function AssessmentRunnerPage(){
+ const {type}=useParams<{type:string}>();
+ const router=useRouter();
+ const assessmentType=type==='phq-9'?'PHQ-9':type==='gad-7'?'GAD-7':null;
+ const [schema,setSchema]=useState<Schema|null>(null);
+ const [loading,setLoading]=useState(true);
+ const [currentIndex,setCurrentIndex]=useState(0);
+ const [answers,setAnswers]=useState<Record<string,number>>({});
+ const [submitting,setSubmitting]=useState(false);
+ const [error,setError]=useState('');
+ const [showSafety,setShowSafety]=useState(false);
+ const [safetyError,setSafetyError]=useState('');
+ const eventId=useRef<string>('');
+ const lastItem9Score=useRef<number>(0);
+ useEffect(()=>{
+  let active=true;
+  if(!assessmentType){setError('Unknown screening instrument.');setLoading(false);return;}
+  setLoading(true);
+  loadAssessmentSchema(assessmentType).then((res)=>{
+   if(!active)return;
+   if('error' in res){setError(res.error||'Assessment unavailable');setSchema(null);}
+   else {
+    const row=res.schema as unknown as Schema;
+    const n=assessmentType==='PHQ-9'?9:7;
+    const expectedPrefix=assessmentType==='PHQ-9'?'phq9_q':'gad7_q';
+    if(!row?.schema_json?.questions || row.schema_json.questions.length!==n ||
+       row.schema_json.questions.some((q,i)=>q.key!==expectedPrefix+(i+1))){
+      setError('This assessment is temporarily unavailable. Please contact support.');
+    } else setSchema(row);
+   }
+   setLoading(false);
+  }).catch(()=>{if(active){setLoading(false);setError('Unable to load assessment. Please retry.')}});
+  return()=>{active=false};
+ },[assessmentType]);
+ const questions=schema?.schema_json.questions||[];
+ const options=schema?.schema_json.scale||[];
+ const current=questions[currentIndex];
+ const answered=questions.filter(q=>answers[q.key]!==undefined).length;
+ const percentage=questions.length?Math.round(answered/questions.length*100):0;
+ const onSelect=async(value:number)=>{
+  if(!current)return;
+  setAnswers(prev=>({...prev,[current.key]:value}));
+  if(current.key==='phq9_q9'&&value>0){
+   setShowSafety(true);setSafetyError('');
+   if(!eventId.current)eventId.current=crypto.randomUUID();
+   lastItem9Score.current=value;
+   try{
+    const r=await recordSafetySignal(eventId.current,value,false);
+    if(!r.success)setSafetyError('The safety acknowledgement could not be saved. Support information is still available below.');
+   }catch{setSafetyError('Unable to save the safety event. Support information is still available.');}
+  }
+ };
+ const onAcknowledge=async()=>{
+  setShowSafety(false);
+  if(eventId.current&&lastItem9Score.current>0){
+   try{await recordSafetySignal(eventId.current,lastItem9Score.current,true)}catch{}
+  }
+ };
+ const submit=async()=>{
+  if(!assessmentType||!schema||questions.some(q=>answers[q.key]===undefined)){setError('Answer every question before submitting.');return;}
+  setSubmitting(true);setError('');
+  try{
+   const result=await submitAssessment({assessmentType,answers,schemaId:schema.id});
+   if(!result.success||!result.data?.assessmentId){setError(result.error||'Unable to save assessment. Try again.');setSubmitting(false);return;}
+   router.replace('/patient/assessment/result/'+result.data.assessmentId);
+   router.refresh();
+  }catch(e){setError(e instanceof Error?e.message:'Unable to submit. Your answers are still here.');setSubmitting(false);}
+ };
+ if(!assessmentType)return <section className="mx-auto max-w-xl px-6 py-24"><h1 className="text-2xl font-bold">Unknown assessment</h1><Link href="/patient/assessment" className="text-teal-700">View assessments</Link></section>;
+ return <section className="min-h-[75vh] bg-gradient-to-b from-teal-50/40 via-white to-slate-50 px-4 py-10 sm:px-6">
+  <div className="mx-auto max-w-2xl">
+   <Link href="/patient/assessment" className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-teal-700"><ArrowLeft className="size-4"/> Back to assessments</Link>
+   <div className="mb-7">
+    <p className="text-xs font-bold uppercase tracking-widest text-teal-700">Evidence-based screening</p>
+    <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{assessmentType==='PHQ-9'?'Depression screening':'Anxiety screening'}</h1>
+    <p className="mt-2 text-sm text-slate-600">Answer based on your experiences during the past two weeks. This is a screening tool, not a medical diagnosis.</p>
+   </div>
+   {error&&<div role="alert" className="mb-5 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><AlertCircle className="size-5 shrink-0"/>{error}</div>}
+   {loading?<div className="flex min-h-52 items-center justify-center gap-3 text-slate-600"><Loader2 className="size-5 animate-spin"/> Loading assessment...</div>:schema&&current?<>
+    <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+     <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-600"><span>Question {currentIndex+1} of {questions.length}</span><span>{answered}/{questions.length} answered · {percentage}%</span></div>
+     <div role="progressbar" aria-label="Assessment completion" aria-valuenow={answered} aria-valuemin={0} aria-valuemax={questions.length} className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-600 transition-all" style={{width:percentage+'%'}}/></div>
     </div>
-  );
+    <AdaptiveQuestionCard questionNumber={currentIndex+1} totalQuestions={questions.length} questionText={current.text}
+     instruction={schema.schema_json.instructions||'Over the last two weeks, how often have you experienced this?'}
+     isCrisisTrigger={current.key==='phq9_q9'} options={options} selectedValue={answers[current.key]} onSelect={onSelect}/>
+    <div className="mt-6 flex items-center justify-between gap-3">
+     <button type="button" onClick={()=>setCurrentIndex(Math.max(0,currentIndex-1))} disabled={currentIndex===0} className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 disabled:opacity-40">Previous</button>
+     {currentIndex<questions.length-1?<button type="button" disabled={answers[current.key]===undefined} onClick={()=>setCurrentIndex(currentIndex+1)}
+     className="rounded-xl bg-teal-700 px-6 py-3 text-sm font-bold text-white disabled:opacity-40">Next question</button>:
+     <button type="button" disabled={submitting||answered!==questions.length} onClick={submit}
+     className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-6 py-3 text-sm font-bold text-white disabled:opacity-40">
+     {submitting&&<Loader2 className="size-4 animate-spin"/>}{submitting?'Validating and saving...':'View my result'}</button>}
+    </div>
+    <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-slate-500"><ShieldCheck className="size-4"/>Your score is calculated from all your answers and saved securely to your account.</p>
+   </>:null}
+   {safetyError&&<p role="alert" className="mt-4 text-sm text-rose-700">{safetyError}</p>}
+   <CrisisSafetyModal isOpen={showSafety} onAcknowledge={onAcknowledge}/>
+  </div>
+ </section>;
 }
