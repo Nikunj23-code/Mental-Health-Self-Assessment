@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
   if (user && (path.startsWith('/patient') || path.startsWith('/therapist') || path.startsWith('/admin'))) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id,role,full_name,preferred_language')
       .eq('id', user.id)
       .single();
 

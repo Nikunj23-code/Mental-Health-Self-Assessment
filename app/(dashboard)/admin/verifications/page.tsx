@@ -18,7 +18,7 @@ export default async function AdminVerificationsPage() {
   // Verify role
   const { data: profileData } = await supabase
     .from("profiles")
-    .select("*")
+    .select('id,role,full_name,preferred_language')
     .eq("id", user.id)
     .single();
 
@@ -40,10 +40,13 @@ export default async function AdminVerificationsPage() {
       hourly_rate,
       bio,
       created_at,
-      profiles(full_name, email)
+      profiles(full_name)
     `)
     .order("created_at", { ascending: false });
 
+  const {data:contacts}=await (supabase as any).rpc('admin_contact_profiles');
+  const contactMap=new Map((contacts||[]).map((c:any)=>[c.id,c.email]));
+  const therapistsWithContact=(therapists||[]).map((t:any)=>({...t,profiles:{...t.profiles,email:contactMap.get(t.id)||''}}));
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
 
@@ -67,7 +70,7 @@ export default async function AdminVerificationsPage() {
           </p>
         </div>
 
-        <VerificationList initialTherapists={therapists || []} />
+        <VerificationList initialTherapists={therapistsWithContact} />
       </main>
     </div>
   );

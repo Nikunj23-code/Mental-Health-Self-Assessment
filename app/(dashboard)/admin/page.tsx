@@ -58,7 +58,7 @@ export default async function AdminDashboardPage() {
   // Fetch counts
   const { count: totalUsers } = await supabase
     .from("profiles")
-    .select("*", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true });
 
   const { count: totalTherapists } = await supabase
     .from("therapist_profiles")

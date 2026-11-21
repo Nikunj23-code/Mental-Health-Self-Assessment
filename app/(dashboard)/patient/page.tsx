@@ -29,7 +29,7 @@ export default async function PatientDashboardPage() {
   // Fetch patient profile
   const { data: profileData } = await supabase
     .from("profiles")
-    .select("*")
+    .select('id,role,full_name,preferred_language')
     .eq("id", user.id)
     .single();
 

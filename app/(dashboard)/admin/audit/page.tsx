@@ -17,7 +17,7 @@ export default async function AdminAuditPage() {
   // Verify role
   const { data: profileData } = await supabase
     .from("profiles")
-    .select("*")
+    .select('id,role,full_name,preferred_language')
     .eq("id", user.id)
     .single();
 
@@ -39,7 +39,7 @@ export default async function AdminAuditPage() {
       metadata,
       ip_address,
       created_at,
-      user:profiles(full_name, email)
+      user:profiles(full_name)
     `)
     .order("created_at", { ascending: false })
     .limit(50);

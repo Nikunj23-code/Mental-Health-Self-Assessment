@@ -18,7 +18,7 @@ export default async function AdminCrisisPage() {
   // Verify role
   const { data: profileData } = await supabase
     .from("profiles")
-    .select("*")
+    .select('id,role,full_name,preferred_language')
     .eq("id", user.id)
     .single();
 
@@ -41,10 +41,13 @@ export default async function AdminCrisisPage() {
       resolution_notes,
       created_at,
       resolved_at,
-      patient:profiles(full_name, email)
+      patient:profiles(full_name)
     `)
     .order("created_at", { ascending: false });
 
+  const {data:contacts}=await (supabase as any).rpc('admin_contact_profiles');
+  const contactMap=new Map((contacts||[]).map((c:any)=>[c.id,c.email]));
+  const logsWithContact=(crisisLogs||[]).map((c:any)=>({...c,patient:{...c.patient,email:contactMap.get(c.patient_id)||''}}));
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
 
@@ -68,7 +71,7 @@ export default async function AdminCrisisPage() {
           </p>
         </div>
 
-        <CrisisManager initialLogs={crisisLogs || []} />
+        <CrisisManager initialLogs={logsWithContact} />
       </main>
     </div>
   );
