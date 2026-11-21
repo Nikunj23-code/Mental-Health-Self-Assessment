@@ -1,143 +1,87 @@
-# MindAlign: Mental Health Self-Assessment Web Application with Intelligent Therapist Matching and Session Management
+# MindAlign — Intelligent Care. Proven Progress.
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.1.7-black.svg)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%20RLS-3ECF8E.svg)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.1-38B2AC.svg)](https://tailwindcss.com/)
-[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black.svg)](https://mental-health-self-assessment.vercel.app)
+MindAlign is a Next.js / Supabase academic proof-of-concept connecting mental-health **screening** (PHQ-9 and GAD-7), transparent therapist **match-fit** scoring, booking, clinician session notes, and longitudinal symptom charts.
 
----
+> **Academic demonstration, not a medical service.** Screening scores are not diagnoses. A match-fit percentage is not a probability of clinical success. Do not use with real patient health information or real clinical consultations until qualified clinical, privacy and security review is complete.
 
-## 📌 Project Overview
-**MindAlign** is a longitudinal mental health support platform developed as a Master of Computer Application (MCA) in Artificial Intelligence & Machine Learning Capstone Project (2026) at Chandigarh University, Uttar Pradesh, Lucknow.
+## Platform
 
-### 👥 Authors & Guidance
-- **Students**:
-  - Nikunj Omer (`25LMMC1024`)
-  - Priyanshu Kanaujia (`25LMMC1025`)
-  - Tushar Kumar (`25LMMC1061`)
-  - Uday Gupta (`25LMMC1060`)
-- **Project Guide**: Mr. Sumit Bumbak  
-**School of Computing and Information System, Chandigarh University, Uttar Pradesh, Lucknow**
+| Layer | Implementation |
+| --- | --- |
+| UI | Next.js App Router, React 19, Tailwind CSS, Lucide, Recharts |
+| Auth + DB | Supabase Auth (email/password and optional confirmation), PostgreSQL RLS |
+| Server workflows | Supabase transactional PostgreSQL RPCs behind Next.js Server Actions |
+| Deployment | Vercel Hobby, linked GitHub `main` |
+| Database types | Generated from live Supabase schema in `types/database.ts` |
+| Project ID | `yvlzmzttucohewognkxl` |
+| Repository | [GitHub](https://github.com/Nikunj23-code/Mental-Health-Self-Assessment) |
+| Website | https://mental-health-self-assessment.vercel.app |
 
----
+## Patient journey
 
-## 🌟 The 4 Core USPs (Unique Selling Propositions)
+1. Sign up at `/register` or sign in at `/login`. When email confirmation is required, confirm the email before signing in. Reset a password at `/forgot-password`.
+2. `/patient/assessment` → select PHQ-9 or GAD-7, loaded from `assessment_schemas.schema_json`; answer all 9 or 7 questions.
+3. The server validates every response, computes the validated *total* (PHQ-9 0–27; GAD-7 0–21), and persists assessment plus responses in one PostgreSQL transaction. The result gets a durable ID at `/patient/assessment/result/[id]`.
+4. `/patient/match` is personalized **only after** an assessment; it explains the factors used and excludes clinicians not marked approved. High severity restricts recommendations further. Reviews and calendar availability are separate signals, not predictions of outcome.
+5. `/patient/book/[therapistId]` shows only available slots; booking is atomic. `/patient/appointments` contains history and cancellation.
+6. `/patient/progress` displays stored time-series results and only those follow-up plans that a clinician explicitly shared.
 
-1. **Deterministic Explainable Multi-Factor Matching Algorithm (XAI)**
-   - Scores verified clinicians using a multi-factor weighting scheme:
-     - **35% Specialty Alignment**: Direct match with primary symptoms (e.g., Major Depressive Disorder, Generalised Anxiety).
-     - **25% Severity-Acuity Suitability**: Severe scores (PHQ-9 $\ge 15$ or GAD-7 $\ge 15$) mandate licensed clinical psychologists or psychiatrists with $>5$ years clinical experience.
-     - **20% Availability Score**: Evaluates prompt booking capability based on upcoming consultation openings.
-     - **10% Quality Rating Score**: Incorporates verified consultation ratings ($1-5$ stars).
-     - **10% User Preference Fit**: Takes into account user preferred language (Hindi, English) and session format (Online/In-person).
-   - Generates transparent, human-readable natural language rationales (e.g. *"94% Match: Recommended for Severe Depression based on PHQ-9 score of 18..."*).
+## Therapist journey
 
-2. **Closed-Loop Longitudinal Measurement-Based Care (MBC)**
-   - Interactive dual-dashboard visualization powered by Recharts.
-   - Both patients and assigned therapists track PHQ-9 (Depression) and GAD-7 (Anxiety) score trajectories over time with clinical severity threshold markers (Mild: 5, Moderate: 10, Moderately Severe: 15, Severe: 20).
-   - Structured SOAP (Subjective, Objective, Assessment, Plan) clinical notes authored by therapists with patient-visible sharing toggles.
+- `/therapist`: practice overview and scheduled appointments.
+- `/therapist/availability`: create/remove own future slots (uses Asia/Kolkata timezone for this academic demo).
+- `/therapist/patients`: only assigned patients, with secured patient-detail subroutes.
+- `/therapist/sessions/[appointmentId]`: record SOAP notes for authorized appointments. Only explicitly shared follow-up plans are available to patients; private SOAP content stays restricted.
+- Newly registered therapist profiles remain **unverified** pending authorized admin review.
 
-3. **Decoupled Adaptive JSON-Schema Assessment Engine with Crisis Interception**
-   - Assessment questionnaires (PHQ-9 and GAD-7) rendered dynamically from declarative JSON schemas in Supabase.
-   - **Zero-Latency Item 9 Crisis Interception**: Answering $>0$ on PHQ-9 Question 9 immediately intercepts UI flow with an unclosable high-priority safety modal displaying emergency hotlines:
-     - **Tele-MANAS**: `14416` / `1800-891-4416` (24/7 National Mental Health Helpline, India)
-     - **KIRAN**: `1800-599-0019` (Ministry of Social Justice and Empowerment)
-     - **National Suicide Prevention Lifeline (US)**: `988`
-     - Automatic crisis logging to `crisis_logs` with admin notification dispatch.
+## Admin journey
 
-4. **Privacy-First Zero-AdTech Architecture with Granular RBAC**
-   - Strict zero-tracker policy: no Google Analytics, no Facebook Pixels, no third-party CDNs.
-   - 22 Supabase Row-Level Security (RLS) policies enforcing complete isolation between patients, therapists, and administrators.
-   - Atomic double-booking prevention through database-level slot lock triggers.
+- `/admin/verifications`: clinician review through an admin-checked database function.
+- `/admin/crisis`: restricted safety event handling.
+- `/admin/audit`: review tamper-restricted event records.
+- Authenticated users cannot directly assign themselves `admin`, self-verify as clinicians, insert audit events, or update clinical notes.
 
----
+## Setup
 
-## 🛠️ Tech Stack & Constraints
-- **Frontend / Full-Stack**: Next.js 15.1.7 (App Router), React 19, Tailwind CSS, Lucide React, Recharts.
-- **Backend / Authentication**: Next.js Server Actions, `@supabase/ssr`, Supabase Auth with PKCE and secure cookies.
-- **Database**: PostgreSQL on Supabase Free Tier (`yvlzmzttucohewognkxl`) with custom triggers and RLS.
-- **Deployment**: Vercel Hobby Tier (`mental-health-self-assessment.vercel.app`).
-- **Platform Compliance**: Strict adherence to Supabase Free + Vercel Hobby + GitHub only.
-
----
-
-## 🚀 Environment Setup
-
-Create `.env.local` in the project root:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://yvlzmzttucohewognkxl.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2bHptenR0dWNvaGV3b2dua3hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5OTc5NzIsImV4cCI6MjEwNzU3Mzk3Mn0.3ow6usDbjP2kFImOVj9YxZ39SfrE14rhQ8YRlBKeZFo
-NEXT_PUBLIC_SITE_URL=https://mental-health-self-assessment.vercel.app
-```
-
-### Install Dependencies
 ```bash
-npm install
-```
-
-### Run Locally
-```bash
+npm ci
+cp .env.example .env.local
+# Populate .env.local from your Supabase project settings (never commit secrets)
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000).
 
-### Build for Production
+Required environment variables:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_PUBLIC_PUBLISHABLE_OR_ANON_KEY
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+For Vercel, set `NEXT_PUBLIC_SITE_URL` to the deployed canonical site. Configure Supabase Auth's **Site URL** and **Redirect URLs** to allow `https://mental-health-self-assessment.vercel.app/auth/callback` (and `http://localhost:3000/auth/callback` for local tests).
+
+Do not expose a service-role secret to the client. This application does **not** require service-role access for ordinary user workflows.
+
+## Database
+
+An existing PostgreSQL database was initialized before this repair. Applied new migrations are saved under `supabase/migrations/` in their execution order. **They supplement, not replace, the existing baseline schema**. `IMPLEMENTATION.md` documents the original relational schema and conceptual specification, but its planned fields/architecture should not be used as a substitute for the current generated types. Check `RELEASE_STATUS.md` for precise rollout status and remaining work.
+
+## Verification
+
 ```bash
 npm run build
-npm run start
+npm run typecheck
+npm test
 ```
 
----
+The CI workflow runs build, type-check and score tests. Real multi-account E2E, email delivery, database migration-rehearsal and clinical safety review are distinct release gates and have not been replaced by a green build.
 
-## 🔑 Demo & Test Credentials
+## Original product documents
 
-The database comes pre-seeded with verified test practitioners and consultation slots:
+- `USP.md`: intended differentiators.
+- `IMPLEMENTATION.md`: original technical **blueprint** (some claims and field names predate repair).
+- `issues.md`: 64-issue source-based audit with history and remediation criteria.
+- `RELEASE_STATUS.md`: verified changes and unverified release blockers.
+- `SECURITY.md`: sensitive data, role and screening safety boundaries.
 
-| Role | Name | Email | Specialty | Experience |
-|---|---|---|---|---|
-| **Therapist** | Dr. Ananya Sharma | `ananya.sharma@mindalign.in` | Depression, Anxiety, CBT | 8 years |
-| **Therapist** | Dr. Vikram Malhotra | `vikram.malhotra@mindalign.in` | Severe Depression, Trauma, PTSD | 12 years |
-| **Therapist** | Ms. Sneha Kapoor | `sneha.kapoor@mindalign.in` | Stress Management, Generalised Anxiety | 5 years |
-
-*You can register any new patient or therapist account directly via the `/register` portal with instant sign-in.*
-
----
-
-## 📂 Repository Structure
-```
-├── app/
-│   ├── (auth)/
-│   │   ├── login/page.tsx             # Supabase Auth sign-in
-│   │   └── register/page.tsx          # Multi-role patient/therapist registration
-│   ├── (dashboard)/
-│   │   ├── admin/                     # Admin control center, audit logs, crisis queue
-│   │   ├── patient/                   # Patient portal, assessments, matching, booking, progress
-│   │   └── therapist/                 # Clinician portal, schedule, SOAP notes, patients
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx                       # Public landing page with Tele-MANAS hotline banner
-├── components/
-│   ├── assessment/                    # Adaptive cards, zero-latency CrisisSafetyModal, results
-│   ├── matching/                      # Therapist cards, XAI ExplanationBadge
-│   ├── progress/                      # Recharts LongitudinalChart
-│   └── Navbar.tsx                     # Dynamic role-aware navigation
-├── lib/
-│   ├── clinical/
-│   │   ├── crisis.ts                  # Hotline registry & Item 9 triggers
-│   │   └── scoring.ts                 # PHQ-9 & GAD-7 validation algorithms
-│   ├── matching/
-│   │   ├── engine.ts                  # 5-factor deterministic matching engine
-│   │   └── explainability.ts          # Transparent XAI rationale generator
-│   └── supabase/                      # SSR client & server helpers
-├── server/actions/                    # Server Actions: auth, booking, assessment, notes, admin
-├── types/database.ts                  # Fully typed Supabase schema interfaces
-├── IMPLEMENTATION.md                  # Comprehensive AI agent specification
-└── USP.md                             # Technical USP design document
-```
-
----
-
-## 📜 Academic Integrity & License
-Submitted in partial fulfillment of the requirements for the award of Master of Computer Application (MCA) in AI & ML (2026), Chandigarh University.
-Licensed under the MIT License.
+**License:** MIT. **Scope:** Academic prototype only, pending professional review.
