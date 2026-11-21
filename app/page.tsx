@@ -1,4 +1,6 @@
 import React from 'react';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
   Activity,
@@ -13,7 +15,10 @@ import {
   CheckCircle,
 } from 'lucide-react';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const db=await createClient();
+  const {data:{user}}=await db.auth.getUser();
+  if(user){ const {data:profile}=await db.from('profiles').select('role').eq('id',user.id).single(); const role=(profile as any)?.role; if(['patient','therapist','admin'].includes(role)) redirect('/'+role); }
   return (
     <div className="flex flex-col">
       {/* Hero Section */}

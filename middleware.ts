@@ -50,6 +50,7 @@ export async function middleware(request: NextRequest) {
       .single();
 
     const role = (profile as any)?.role;
+    if(!['patient','therapist','admin'].includes(role)) return NextResponse.redirect(new URL('/login?error=profile', request.url));
 
     if (path.startsWith('/patient') && role !== 'patient') {
       return NextResponse.redirect(new URL(`/${role}`, request.url));

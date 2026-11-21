@@ -96,9 +96,13 @@ export default function RegisterPage() {
           : "Account created successfully! Redirecting..."
       );
 
-      setTimeout(() => {
-        router.push(role === "therapist" ? "/therapist" : "/patient");
-      }, 1500);
+      if (result.needsEmailConfirmation) {
+        setSuccessMsg("Please verify your email address, then sign in to continue.");
+        setLoading(false);
+      } else {
+        router.replace(role === "therapist" ? "/therapist" : "/patient");
+        router.refresh();
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred.";
       setErrorMsg(msg);

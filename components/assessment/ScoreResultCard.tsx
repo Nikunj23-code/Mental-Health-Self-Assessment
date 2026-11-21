@@ -26,7 +26,7 @@ export function ScoreResultCard({
   const score = totalScore !== undefined ? totalScore : result?.totalScore ?? 0;
   const severity = severityBand || result?.severityLabel || 'Minimal';
   const hasCrisis = crisisFlag !== undefined ? crisisFlag : result?.hasCrisisFlag ?? false;
-  const recommendation = result?.clinicalRecommendation || `Your ${displayType} score places you in the ${severity.toLowerCase()} symptom category. Regular longitudinal tracking is clinically recommended.`;
+  const recommendation = result?.clinicalRecommendation || `Your ${displayType} screening score falls in the ${severity.toLowerCase()} symptom band. This is a screening result, not a diagnosis. A qualified professional can help you interpret it.`;
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
@@ -39,14 +39,14 @@ export function ScoreResultCard({
         </div>
 
         <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/80 rounded-2xl px-5 py-3">
-          <div className="text-3xl font-black text-slate-900">{score}</div>
+          <div className="text-3xl font-black text-slate-900">{score}<span className="text-base font-semibold text-slate-400">/{displayType === 'PHQ-9' ? 27 : 21}</span></div>
           <div className="text-xs text-slate-500 font-medium leading-tight">
-            Total<br />Score
+            Screening<br />Score
           </div>
         </div>
       </div>
 
-      <div className="py-6">
+      <div className="py-6"><p className="mb-4 text-xs text-slate-500">Calculated as the sum of {displayType === 'PHQ-9' ? '9' : '7'} answers, each scored from 0 to 3. This number is not an AI diagnostic-confidence percentage.</p>
         <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">Clinical Care Guidance</h4>
         <p className="text-slate-700 text-sm leading-relaxed font-normal">{recommendation}</p>
 
