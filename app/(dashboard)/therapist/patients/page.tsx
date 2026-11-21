@@ -163,6 +163,7 @@ export default async function TherapistPatientsPage() {
                           )}
                         </div>
 
+                        <Link href={`/therapist/patients/${p.patientId}`} className="rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-xs font-bold text-teal-800 hover:bg-teal-50">View patient</Link>
                         <Link
                           href={`/therapist/sessions/${p.latestAppointment.id}`}
                           className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition inline-flex items-center gap-1.5 shadow-sm"
