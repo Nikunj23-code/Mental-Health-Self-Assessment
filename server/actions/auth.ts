@@ -1,136 +1,63 @@
 'use server';
-
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { user_role } from '@/types/database';
+import { revalidatePath } from 'next/cache';
 
+export type PublicRole = 'patient' | 'therapist';
 export interface SignUpInput {
-  email: string;
-  password: string;
-  fullName: string;
-  role?: user_role;
-  preferredLanguage?: string;
-  licenseNumber?: string;
-  specializations?: string[];
-  yearsOfExperience?: number;
-  hourlyRate?: number;
-  bio?: string;
-  title?: string;
+  email: string; password: string; fullName: string; role?: PublicRole;
+  preferredLanguage?: string; licenseNumber?: string; specializations?: string[];
+  yearsOfExperience?: number; hourlyRate?: number; bio?: string; title?: string;
 }
-
+function isValidEmail(v:string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 export async function signIn(formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  // Fetch role
-  const { data: profile } = await (supabase as any)
-    .from('profiles')
-    .select('*')
-    .eq('id', data.user.id)
-    .single();
-
-  const role = (profile as any)?.role || 'patient';
-  redirect(`/${role}`);
+  const email = String(formData.get('email') || '').trim().toLowerCase();
+  const password = String(formData.get('password') || '');
+  if (!isValidEmail(email) || !password) return {error:'Enter a valid email and password.'};
+  const db=await createClient();
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error || !data.user) return {error:error?.message || 'Sign in unsuccessful.'};
+  const {data:profile,error:profileError}=await db.from('profiles').select('role').eq('id',data.user.id).single();
+  if(profileError || !profile || !['patient','therapist','admin'].includes((profile as any).role))
+    return {error:'Your account needs profile assistance. Please contact support.'};
+  revalidatePath('/','layout');
+  redirect('/'+(profile as any).role);
 }
-
-export async function signUp(inputOrFormData: FormData | SignUpInput) {
-  let email = '';
-  let password = '';
-  let fullName = '';
-  let role: user_role = 'patient';
-  let preferredLanguage = 'English';
-  let licenseNumber = '';
-  let specializations: string[] = ['Depression', 'Generalized Anxiety'];
-  let yearsOfExperience = 3;
-  let hourlyRate = 1500;
-  let bio = 'Dedicated mental health professional.';
-
-  if (inputOrFormData instanceof FormData) {
-    email = inputOrFormData.get('email') as string;
-    password = inputOrFormData.get('password') as string;
-    fullName = inputOrFormData.get('fullName') as string;
-    role = (inputOrFormData.get('role') as user_role) || 'patient';
-    preferredLanguage = (inputOrFormData.get('preferredLanguage') as string) || 'English';
-    licenseNumber = (inputOrFormData.get('licenseNumber') as string) || '';
-    bio = (inputOrFormData.get('bio') as string) || bio;
-  } else {
-    email = inputOrFormData.email;
-    password = inputOrFormData.password;
-    fullName = inputOrFormData.fullName;
-    role = inputOrFormData.role || 'patient';
-    preferredLanguage = inputOrFormData.preferredLanguage || 'English';
-    licenseNumber = inputOrFormData.licenseNumber || '';
-    specializations = inputOrFormData.specializations || specializations;
-    yearsOfExperience = inputOrFormData.yearsOfExperience || 3;
-    hourlyRate = inputOrFormData.hourlyRate || 1500;
-    bio = inputOrFormData.bio || bio;
-  }
-
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        role,
-      },
-    },
+export async function signUp(input: SignUpInput | FormData) {
+  const form = input instanceof FormData;
+  const data:SignUpInput=form ? {
+    email:String(input.get('email')||''),password:String(input.get('password')||''),
+    fullName:String(input.get('fullName')||''),role:String(input.get('role')||'patient') as PublicRole,
+    licenseNumber:String(input.get('licenseNumber')||'')
+  } : input;
+  const email=data.email.trim().toLowerCase(), fullName=data.fullName.trim();
+  if(!isValidEmail(email)||fullName.length<2||fullName.length>120||data.password.length<8)
+    return {success:false,error:'Enter a valid name, email and password of at least eight characters.'};
+  if(data.role && !['patient','therapist'].includes(data.role)) return {success:false,error:'Invalid account role.'};
+  const role=data.role||'patient';
+  if(role==='therapist' && (!data.licenseNumber?.trim() || data.licenseNumber.length>120))
+    return {success:false,error:'Enter your professional registration number.'};
+  const db=await createClient();
+  const {data:registered,error}=await db.auth.signUp({
+    email,password:data.password,
+    options:{data:{
+      full_name:fullName,role,preferred_language:data.preferredLanguage||'English',
+      license_number:role==='therapist'?data.licenseNumber?.trim():undefined,
+      specialties:role==='therapist'?(data.specializations||[]):undefined,
+      experience_years:role==='therapist'?Math.max(0,Math.min(60,Number(data.yearsOfExperience)||0)):undefined,
+      hourly_rate:role==='therapist'?Math.max(0,Number(data.hourlyRate)||0):undefined,
+      bio:role==='therapist'?(data.bio||''):undefined,
+      title:role==='therapist'?(data.title||'Mental Health Practitioner'):undefined
+    }}
   });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  if (data.user) {
-    // Insert initial profile
-    await (supabase as any).from('profiles').upsert({
-      id: data.user.id,
-      email,
-      full_name: fullName,
-      role,
-    });
-
-    if (role === 'therapist') {
-      await (supabase as any).from('therapist_profiles').insert({
-        user_id: data.user.id,
-        bio,
-        license_number: licenseNumber || `RCI-${Date.now().toString().slice(-6)}`,
-        is_verified: false,
-        specializations,
-        years_of_experience: yearsOfExperience,
-        average_rating: 5.0,
-        total_reviews: 0,
-        hourly_rate: hourlyRate,
-      });
-    }
-
-    await (supabase as any).from('audit_logs').insert({
-      user_id: data.user.id,
-      action: 'USER_SIGNUP',
-      table_affected: 'profiles',
-      record_id: data.user.id,
-      metadata: { role, email },
-    });
-  }
-
-  return { success: true };
+  if(error) return {success:false,error:error.message};
+  if(!registered.user) return {success:false,error:'Signup was not completed.'};
+  if(registered.session) revalidatePath('/','layout');
+  return {success:true,needsEmailConfirmation:!registered.session,role};
 }
-
 export async function signOut() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect('/login');
+ const db=await createClient();
+ await db.auth.signOut();
+ revalidatePath('/','layout');
+ redirect('/login');
 }

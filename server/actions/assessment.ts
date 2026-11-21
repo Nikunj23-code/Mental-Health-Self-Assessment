@@ -1,150 +1,35 @@
 'use server';
-
 import { createClient } from '@/lib/supabase/server';
-import { calculatePHQ9, calculateGAD7 } from '@/lib/clinical/scoring';
-import { assessment_type } from '@/types/database';
+import { calculatePHQ9,calculateGAD7 } from '@/lib/clinical/scoring';
 import { revalidatePath } from 'next/cache';
-
-export interface SubmitAssessmentParams {
-  assessmentType: assessment_type;
-  answers: Record<string, number>;
-  schemaId?: string;
+type Type='PHQ-9'|'GAD-7';
+export type SubmitAssessmentParams={assessmentType:Type;answers:Record<string,number>;schemaId?:string};
+export async function loadAssessmentSchema(type:Type) {
+ if(!['PHQ-9','GAD-7'].includes(type)) return {error:'Unknown assessment.'};
+ const db=await createClient();
+ const {data,error}=await db.from('assessment_schemas').select('id,type,version,title,description,schema_json').eq('type',type).eq('is_active',true).single();
+ if(error||!data) return {error:'Assessment temporarily unavailable. Please retry later.'};
+ return {schema:data};
 }
-
-export type SubmitAssessmentResponse = {
-  success: boolean;
-  error?: string;
-  data?: {
-    assessmentId: string;
-    totalScore: number;
-    severityBand: string;
-    crisisFlag: boolean;
-    scoreResult: any;
-  };
-};
-
-export async function submitAssessment(
-  paramsOrType: SubmitAssessmentParams | assessment_type,
-  schemaIdArg?: string,
-  responsesArg?: Record<string, number>
-): Promise<SubmitAssessmentResponse> {
-  let type: assessment_type = 'PHQ-9';
-  let schemaId: string | undefined = undefined;
-  let responses: Record<string, number> = {};
-
-  if (typeof paramsOrType === 'string') {
-    type = paramsOrType;
-    schemaId = schemaIdArg;
-    responses = responsesArg || {};
-  } else {
-    type = paramsOrType.assessmentType;
-    schemaId = paramsOrType.schemaId;
-    responses = paramsOrType.answers;
-  }
-
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error('Authentication required.');
-  }
-
-  // If schemaId not provided, fetch default from database
-  if (!schemaId) {
-    const { data: schemaRow } = await (supabase as any)
-      .from('assessment_schemas')
-      .select('id')
-      .eq('instrument_type', type)
-      .limit(1)
-      .maybeSingle();
-
-    if (schemaRow) {
-      schemaId = (schemaRow as any).id;
-    }
-  }
-
-  const scoreResult = type === 'PHQ-9' ? calculatePHQ9(responses) : calculateGAD7(responses);
-
-  const { data: assessment, error: assessmentError } = await (supabase as any)
-    .from('assessments')
-    .insert({
-      patient_id: user.id,
-      schema_id: schemaId,
-      assessment_type: type,
-      total_score: scoreResult.totalScore,
-      severity_band: scoreResult.severity,
-      crisis_flag: scoreResult.hasCrisisFlag,
-    })
-    .select('id')
-    .single();
-
-  if (assessmentError || !assessment) {
-    throw new Error(`Failed to save assessment: ${assessmentError?.message}`);
-  }
-
-  const assessmentId = (assessment as any).id;
-
-  const responseInserts = Object.entries(responses).map(([key, val]) => ({
-    assessment_id: assessmentId,
-    question_id: key,
-    response_value: val,
-  }));
-
-  if (responseInserts.length > 0) {
-    await (supabase as any).from('assessment_responses').insert(responseInserts);
-  }
-
-  if (scoreResult.hasCrisisFlag) {
-    await (supabase as any).from('crisis_logs').insert({
-      patient_id: user.id,
-      assessment_id: assessmentId,
-      item_score: responses['phq9_q9'] || 1,
-      status: 'open',
-      safety_plan_acknowledged: true,
-    });
-
-    await (supabase as any).from('notifications').insert({
-      recipient_id: user.id,
-      title: 'Immediate Safety Lifelines Available',
-      message: 'Your assessment flagged severe distress. Free 24/7 tele-counseling is immediately accessible via Tele-MANAS (14416).',
-      type: 'crisis',
-      link: '/patient/progress',
-    });
-  }
-
-  await (supabase as any).from('audit_logs').insert({
-    user_id: user.id,
-    action: 'ASSESSMENT_COMPLETED',
-    table_affected: 'assessments',
-    record_id: assessmentId,
-    metadata: {
-      type,
-      score: scoreResult.totalScore,
-      severity: scoreResult.severity,
-      crisis: scoreResult.hasCrisisFlag,
-    },
-  });
-
-  revalidatePath('/patient/progress');
-  revalidatePath('/patient');
-  revalidatePath('/patient/match');
-
-  try {
-    return {
-      success: true,
-      data: {
-        assessmentId: assessmentId,
-        totalScore: scoreResult.totalScore,
-        severityBand: scoreResult.severity,
-        crisisFlag: scoreResult.hasCrisisFlag,
-        scoreResult,
-      },
-    };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Failed to submit assessment.';
-    return {
-      success: false,
-      error: msg,
-    };
-  }
+export async function recordSafetySignal(eventId:string,itemScore:number,acknowledged=false) {
+ if(!/^[0-9a-f-]{36}$/i.test(eventId)||![1,2,3].includes(itemScore))return {success:false,error:'Invalid safety response'};
+ const db=await createClient();
+ const {error}=await (db as any).rpc('record_item9_safety',{p_client_event_id:eventId,p_item_score:itemScore,p_acknowledged:acknowledged});
+ return {success:!error,error:error?.message};
+}
+export async function submitAssessment(params:SubmitAssessmentParams | Type, _schemaId?:string, legacyAnswers?:Record<string,number>) {
+ const type=typeof params==='string'?params:params.assessmentType;
+ const answers=typeof params==='string'?(legacyAnswers||{}):params.answers;
+ if(!['PHQ-9','GAD-7'].includes(type))return {success:false,error:'Invalid assessment type.'};
+ const n=type==='PHQ-9'?9:7,prefix=type==='PHQ-9'?'phq9_q':'gad7_q';
+ if(!answers||Object.keys(answers).length!==n||Array.from({length:n},(_,i)=>answers[prefix+(i+1)]).some(x=>!Number.isInteger(x)||x<0||x>3))
+   return {success:false,error:'Please answer every question with a valid option.'};
+ const db=await createClient();
+ const {data:auth}=await db.auth.getUser();
+ if(!auth.user)return {success:false,error:'Please sign in to submit.'};
+ const {data,error}=await (db as any).rpc('submit_screening',{p_type:type,p_answers:answers});
+ if(error||!data) return {success:false,error:error?.message||'Unable to save. Please try again.'};
+ const scoreResult=type==='PHQ-9'?calculatePHQ9(answers):calculateGAD7(answers);
+ revalidatePath('/patient');revalidatePath('/patient/match');revalidatePath('/patient/progress');
+ return {success:true,data:{...(data as any),scoreResult}};
 }
