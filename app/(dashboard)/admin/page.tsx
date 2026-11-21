@@ -36,7 +36,7 @@ export default async function AdminDashboardPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
 
-        <main className="flex-1 max-w-xl mx-auto px-4 py-16 text-center">
+        <div className="flex-1 max-w-xl mx-auto px-4 py-16 text-center">
           <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm">
             <ShieldAlert className="w-12 h-12 text-rose-600 mx-auto mb-3" />
             <h1 className="text-xl font-bold text-slate-900">Restricted Administrator Area</h1>
@@ -50,7 +50,7 @@ export default async function AdminDashboardPage() {
               Return to Home
             </Link>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
@@ -112,7 +112,7 @@ export default async function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">
             System Administration & Governance
@@ -294,7 +294,7 @@ export default async function AdminDashboardPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

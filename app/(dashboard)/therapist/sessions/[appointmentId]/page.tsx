@@ -70,7 +70,7 @@ export default async function SessionDetailPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
+      <div className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
         <Link
           href="/therapist/patients"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors mb-6"
@@ -145,7 +145,7 @@ export default async function SessionDetailPage({ params }: Props) {
           patientId={apt.patient_id}
           existingNote={existingNote}
         />
-      </main>
+      </div>
     </div>
   );
 }

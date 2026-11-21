@@ -44,7 +44,7 @@ export default async function RootLayout({
             <div className="flex items-center gap-4">
               <span>National Crisis Line: <strong>14416 (Tele-MANAS)</strong></span>
               <span>•</span>
-              <span>Emergency: <strong>988</strong></span>
+              <span>US crisis support: <strong>988</strong></span>
             </div>
           </div>
         </footer>

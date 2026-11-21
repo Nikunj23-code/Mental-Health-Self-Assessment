@@ -47,7 +47,7 @@ export default async function AdminAuditPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         <Link
           href="/admin"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors mb-6"
@@ -118,7 +118,7 @@ export default async function AdminAuditPage() {
             </table>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
