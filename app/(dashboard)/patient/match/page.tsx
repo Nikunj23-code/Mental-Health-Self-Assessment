@@ -105,7 +105,7 @@ export default async function TherapistMatchingPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
+      <div className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
           <Link
             href="/patient"
@@ -184,7 +184,7 @@ export default async function TherapistMatchingPage() {
             </p>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

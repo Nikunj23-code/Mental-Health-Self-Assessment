@@ -80,7 +80,7 @@ export default async function TherapistDashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         {/* Verification Warning if pending */}
         {!therapistProfile.is_verified && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
@@ -235,7 +235,7 @@ export default async function TherapistDashboardPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

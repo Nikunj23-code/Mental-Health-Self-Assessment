@@ -72,7 +72,7 @@ export default async function PatientDashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-lg mb-8 relative overflow-hidden">
           <div className="relative z-10 max-w-2xl">
@@ -311,7 +311,7 @@ export default async function PatientDashboardPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
