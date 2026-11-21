@@ -8,7 +8,7 @@ export default function ResetPasswordPage(){
  const submit=async(e:React.FormEvent)=>{e.preventDefault();setMessage('');
   if(password.length<8||password!==confirm){setMessage('Passwords must match and contain at least 8 characters.');return;}
   setPending(true);try{const db=createClient();const {error}=await db.auth.updateUser({password});
-   if(error)throw error;setMessage('Password updated successfully.');setTimeout(()=>router.replace('/login'),1200);
+   if(error)throw error;await db.auth.signOut();setMessage('Password updated successfully. Redirecting to sign in.');router.replace('/login');router.refresh();
   }catch(e){setMessage(e instanceof Error?e.message:'Unable to update password. Request another recovery link.');}finally{setPending(false);}};
  return <section className="flex min-h-[73vh] items-center justify-center bg-slate-50 px-4 py-12"><div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
   <h1 className="text-2xl font-black tracking-tight">Create a new password</h1><p className="mt-2 text-sm text-slate-600">This page requires a valid recovery link from your email.</p>

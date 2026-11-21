@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/server/actions/auth";
 import { Activity, Lock, Mail, ArrowRight, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
-  const searchParams=useSearchParams();
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +15,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const redirectTo=searchParams.get('redirect');
+    const redirectTo=new URLSearchParams(window.location.search).get('redirect');
     if(redirectTo)formData.set('returnTo',redirectTo);
 
     try {
@@ -48,10 +46,10 @@ export default function LoginPage() {
           <p className="text-xs text-slate-500 mt-1">Access your care dashboard, assessments, and sessions</p>
         </div>
 
-        {(errorMsg||searchParams.get('error')) && (
+        {errorMsg && (
           <div className="mb-6 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg||'Your session could not be restored. Please sign in again.'}</span>
+            <span>{errorMsg}</span>
           </div>
         )}
 
