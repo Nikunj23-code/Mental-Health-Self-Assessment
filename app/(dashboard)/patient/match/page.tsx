@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Sparkles, SlidersHorizontal, AlertCircle, Info } from "lucide-react";
 import { rankTherapists, MatchingCandidate, PatientCriteria } from "@/lib/matching/engine";
 import { TherapistMatchCard } from "@/components/matching/TherapistMatchCard";
-import Navbar from "@/components/Navbar";
 
 export default async function TherapistMatchingPage() {
   const supabase = await createClient();
@@ -101,7 +100,6 @@ export default async function TherapistMatchingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">

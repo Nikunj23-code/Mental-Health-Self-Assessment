@@ -8,7 +8,6 @@ import AdaptiveQuestionCard from "@/components/assessment/AdaptiveQuestionCard";
 import CrisisSafetyModal from "@/components/assessment/CrisisSafetyModal";
 import ScoreResultCard from "@/components/assessment/ScoreResultCard";
 import { submitAssessment } from "@/server/actions/assessment";
-import Navbar from "@/components/Navbar";
 
 // Standard PHQ-9 questions fallback if network schema unavailable
 const DEFAULT_PHQ9_QUESTIONS = [
@@ -124,7 +123,6 @@ export default function AssessmentRunnerPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       {/* Zero-latency safety modal */}
       <CrisisSafetyModal

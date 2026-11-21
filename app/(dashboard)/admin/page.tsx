@@ -11,7 +11,6 @@ import {
   ArrowRight,
   ClipboardList,
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -36,7 +35,7 @@ export default async function AdminDashboardPage() {
   if (profile?.role !== "admin") {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
-        <Navbar />
+
         <main className="flex-1 max-w-xl mx-auto px-4 py-16 text-center">
           <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm">
             <ShieldAlert className="w-12 h-12 text-rose-600 mx-auto mb-3" />
@@ -112,7 +111,6 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">

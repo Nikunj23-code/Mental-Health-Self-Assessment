@@ -14,7 +14,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import ScoreResultCard from "@/components/assessment/ScoreResultCard";
-import Navbar from "@/components/Navbar";
 
 export default async function PatientDashboardPage() {
   const supabase = await createClient();
@@ -73,7 +72,6 @@ export default async function PatientDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         {/* Welcome Banner */}

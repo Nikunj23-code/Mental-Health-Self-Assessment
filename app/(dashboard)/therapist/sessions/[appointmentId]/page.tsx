@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Stethoscope, Video, Calendar, Clock, AlertTriangle } from "lucide-react";
-import Navbar from "@/components/Navbar";
 import SoapNoteForm from "./SoapNoteForm";
 
 interface Props {
@@ -70,7 +69,6 @@ export default async function SessionDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
         <Link

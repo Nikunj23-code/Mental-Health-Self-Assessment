@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, TrendingDown, ClipboardList, BookOpen, Calendar, CheckCircle2 } from "lucide-react";
 import { LongitudinalChart } from "@/components/progress/LongitudinalChart";
-import Navbar from "@/components/Navbar";
 
 export default async function PatientProgressPage() {
   const supabase = await createClient();
@@ -78,7 +77,6 @@ export default async function PatientProgressPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
         <Link

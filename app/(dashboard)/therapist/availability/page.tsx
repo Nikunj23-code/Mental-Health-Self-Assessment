@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Calendar, Plus, Clock, CheckCircle2 } from "lucide-react";
-import Navbar from "@/components/Navbar";
 import AvailabilityManager from "./AvailabilityManager";
 
 export default async function TherapistAvailabilityPage() {
@@ -41,7 +40,6 @@ export default async function TherapistAvailabilityPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
         <Link
