@@ -33,7 +33,7 @@ export function generateExplanation(
   // 2. Clinical Acuity & Severity Justification
   if (criteria.phq9Severity === 'severe' || criteria.gad7Severity === 'severe') {
     if (subScores.severity === 1.0) {
-      points.push(`Holds advanced clinical licensing (${therapist.title}) essential for high-acuity crisis support.`);
+      points.push(`Has a reviewed clinical designation (${therapist.title}) relevant to higher-acuity assessment follow-up.`);
     }
   } else if (therapist.experienceYears >= 8) {
     points.push(`Offers extensive clinical background with ${therapist.experienceYears}+ years of therapeutic practice.`);
@@ -41,11 +41,11 @@ export function generateExplanation(
 
   // 3. Availability Justification
   if (therapist.unbookedSlotsCount >= 3) {
-    points.push(`Has immediate availability with ${therapist.unbookedSlotsCount} open appointments this week.`);
+    points.push(`Has listed availability with ${therapist.unbookedSlotsCount} open appointments this week.`);
   }
 
   // 4. Rating Benchmark
-  if (therapist.averageRating >= 4.8) {
+  if (therapist.totalReviews > 0 && therapist.averageRating >= 4.8) {
     points.push(`Top-rated practitioner (${therapist.averageRating.toFixed(2)}/5.0 from ${therapist.totalReviews} verified patient reviews).`);
   }
 

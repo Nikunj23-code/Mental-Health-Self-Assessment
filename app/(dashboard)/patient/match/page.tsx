@@ -53,16 +53,17 @@ export default async function TherapistMatchingPage() {
     .eq("is_verified", true);
 
   // Fetch unbooked slots count per therapist
-  const today = new Date().toISOString().split("T")[0];
+  const nowIST = new Date().toLocaleString('sv-SE',{timeZone:'Asia/Kolkata'}).replace(' ','T');
+  const today = nowIST.slice(0,10);
   const { data: slots } = await supabase
     .from("therapist_availability")
-    .select("therapist_id")
+    .select("therapist_id,slot_date,start_time")
     .eq("is_booked", false)
     .gte("slot_date", today);
 
   const slotCountMap: Record<string, number> = {};
   (slots as any[] | null)?.forEach((s: any) => {
-    slotCountMap[s.therapist_id] = (slotCountMap[s.therapist_id] || 0) + 1;
+    if((s.slot_date+'T'+s.start_time)>=nowIST) slotCountMap[s.therapist_id]=(slotCountMap[s.therapist_id]||0)+1;
   });
 
   // Prepare criteria
@@ -76,7 +77,9 @@ export default async function TherapistMatchingPage() {
   };
 
   // Build candidate list
-  const candidates: MatchingCandidate[] = (therapistData || []).map((t: any) => {
+  const severe = latestPHQ9?.severity === 'severe' || latestGAD7?.severity === 'severe';
+  const eligibleTherapists = ((therapistData || []) as any[]).filter((t:any) => !severe || /clinical psychologist|psychiatrist/i.test(t.title||''));
+  const candidates: MatchingCandidate[] = eligibleTherapists.map((t: any) => {
     const fullName = t.profiles?.full_name || "Licensed Therapist";
     const title = t.title || (fullName.startsWith("Dr.") ? "Clinical Psychologist / Psychiatrist" : "Licensed Mental Health Counselor");
 

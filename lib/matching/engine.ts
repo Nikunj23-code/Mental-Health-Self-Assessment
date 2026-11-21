@@ -48,7 +48,8 @@ export function rankTherapists(
 
   const scored = candidates.map((t) => {
     // 1. Specialty Alignment (35%)
-    const matchedSpecialties = t.specialties.filter((s) => needs.has(s));
+    const normalize=(s:string)=>s.toLowerCase().replace(/generalised/g,'generalized').replace(/cognitive behavioral therapy/g,'cbt').replace(/therapy/g,'').trim();
+    const matchedSpecialties = t.specialties.filter((s) => Array.from(needs).some(n => normalize(s).includes(normalize(n)) || normalize(n).includes(normalize(s))));
     const specialtyScore = Math.min(1.0, matchedSpecialties.length / Math.max(1, needs.size));
 
     // 2. Severity-Acuity Suitability (25%)
@@ -64,10 +65,10 @@ export function rankTherapists(
     }
 
     // 3. Availability Score (20%)
-    const availabilityScore = Math.min(1.0, t.unbookedSlotsCount / 5);
+    const availabilityScore = Math.min(1.0, t.unbookedSlotsCount / 10);
 
     // 4. Rating Benchmark (10%)
-    const ratingScore = t.averageRating / 5.0;
+    const ratingScore = t.totalReviews > 0 ? Math.min(1,t.averageRating/5) : 0;
 
     // 5. User Preference Concordance (10%)
     let prefScore = 0.5;

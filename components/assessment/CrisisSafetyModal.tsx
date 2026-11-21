@@ -32,7 +32,7 @@ export function CrisisSafetyModal({ isOpen, onAcknowledge, onClose }: Props) {
         </div>
 
         <p className="text-slate-600 text-sm mb-5 leading-relaxed">
-          Your responses indicate significant distress or thoughts of self-harm. You are never alone. Confidential, free support is immediately accessible right now:
+          You reported thoughts that may involve self-harm. This screening cannot determine immediate danger. If you need support, confidential help is available, and emergency services may be appropriate for immediate danger:
         </p>
 
         <div className="space-y-3 mb-6">
