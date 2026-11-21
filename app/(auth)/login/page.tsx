@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/server/actions/auth";
 import { Activity, Lock, Mail, ArrowRight, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
+  const searchParams=useSearchParams();
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,6 +17,8 @@ export default function LoginPage() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
+    const redirectTo=searchParams.get('redirect');
+    if(redirectTo)formData.set('returnTo',redirectTo);
 
     try {
       const res = await signIn(formData);
@@ -44,10 +48,10 @@ export default function LoginPage() {
           <p className="text-xs text-slate-500 mt-1">Access your care dashboard, assessments, and sessions</p>
         </div>
 
-        {errorMsg && (
+        {(errorMsg||searchParams.get('error')) && (
           <div className="mb-6 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg}</span>
+            <span>{errorMsg||'Your session could not be restored. Please sign in again.'}</span>
           </div>
         )}
 
@@ -73,6 +77,7 @@ export default function LoginPage() {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
                 Password
               </label>
+              <Link href="/forgot-password" className="text-xs font-bold text-teal-700">Forgot password?</Link>
             </div>
             <div className="relative">
               <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />

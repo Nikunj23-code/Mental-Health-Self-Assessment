@@ -21,7 +21,10 @@ export async function signIn(formData: FormData) {
   if(profileError || !profile || !['patient','therapist','admin'].includes((profile as any).role))
     return {error:'Your account needs profile assistance. Please contact support.'};
   revalidatePath('/','layout');
-  redirect('/'+(profile as any).role);
+  const role=(profile as any).role;
+  const requested=String(formData.get('returnTo')||'');
+  const allowed=requested.startsWith('/'+role) && !requested.startsWith('//') && !requested.includes('\\\\');
+  redirect(allowed?requested:'/'+role);
 }
 export async function signUp(input: SignUpInput | FormData) {
   const form = input instanceof FormData;
@@ -40,7 +43,7 @@ export async function signUp(input: SignUpInput | FormData) {
   const db=await createClient();
   const {data:registered,error}=await db.auth.signUp({
     email,password:data.password,
-    options:{data:{
+    options:{emailRedirectTo:(process.env.NEXT_PUBLIC_SITE_URL||'https://mental-health-self-assessment.vercel.app')+'/auth/callback',data:{
       full_name:fullName,role,preferred_language:data.preferredLanguage||'English',
       license_number:role==='therapist'?data.licenseNumber?.trim():undefined,
       specialties:role==='therapist'?(data.specializations||[]):undefined,
@@ -54,6 +57,14 @@ export async function signUp(input: SignUpInput | FormData) {
   if(!registered.user) return {success:false,error:'Signup was not completed.'};
   if(registered.session) revalidatePath('/','layout');
   return {success:true,needsEmailConfirmation:!registered.session,role};
+}
+export async function requestPasswordReset(email:string){
+ const db=await createClient();
+ if(!isValidEmail(email))return {message:'Enter a valid email address.'};
+ const origin=process.env.NEXT_PUBLIC_SITE_URL||'https://mental-health-self-assessment.vercel.app';
+ const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:origin+'/auth/callback?next=/reset-password'});
+ if(error)return {message:'Recovery email could not be sent. Please try later.'};
+ return {message:'If the address is registered, a recovery email is on the way.'};
 }
 export async function signOut() {
  const db=await createClient();
